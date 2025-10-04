@@ -2,6 +2,7 @@ package it.uniba.secapp.upload;
 
 import it.uniba.secapp.dao.ProposalDao;
 import it.uniba.secapp.proposals.Helper;
+import it.uniba.secapp.util.TikaUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -14,18 +15,20 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 
 /**
- * Sprint 1: upload base di file .txt (controllo solo sull'estensione).
- * Sprint 2: aggiungeremo Apache Tika per verificare il MIME reale + sanitizzazione contenuti.
+ * Sprint 2:
+ * - Valida il MIME reale con Apache Tika (deve essere text/plain)
+ * - Legge un sample e blocca contenuti sospetti (HTML/script)
+ * - Mantiene limite semplice: estensione .txt + MIME text/plain
  */
 @WebServlet(name = "UploadProposalServlet", urlPatterns = {"/upload"})
 @MultipartConfig
 public class UploadProposalServlet extends HttpServlet {
 
     private Path uploadDir;
+    private static final long MAX_SIZE_BYTES = 512 * 1024; // 512 KB (esempio)
 
     @Override
     public void init() throws ServletException {
-        // cartella base per upload (sviluppo): ~/secapp_uploads
         String home = System.getProperty("user.home");
         uploadDir = Paths.get(home, "secapp_uploads");
         try {
@@ -54,21 +57,46 @@ public class UploadProposalServlet extends HttpServlet {
             return;
         }
 
-        // Controllo base S1: estensione .txt (in S2 useremo Tika per il controllo serio)
-        String submitted = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-        if (!submitted.toLowerCase().endsWith(".txt")) {
-            req.setAttribute("error", "Carica un file con estensione .txt");
+        if (filePart.getSize() > MAX_SIZE_BYTES) {
+            req.setAttribute("error", "File troppo grande (max 512KB per Sprint 2).");
             req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
             return;
         }
 
-        // Salvataggio su disco con nome "timestamp_originale"
-        Path dest = uploadDir.resolve(System.currentTimeMillis() + "_" + submitted);
+        String submittedName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+        if (!submittedName.toLowerCase().endsWith(".txt")) {
+            req.setAttribute("error", "Estensione non valida. Carica un file .txt");
+            req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
+            return;
+        }
+
+        // 1) Verifica MIME reale con Tika
+        try (InputStream probe = filePart.getInputStream()) {
+            String mime = TikaUtil.detectMime(probe);
+            if (!"text/plain".equalsIgnoreCase(mime)) {
+                req.setAttribute("error", "Tipo di file non valido (MIME rilevato: " + mime + "). Serve text/plain.");
+                req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
+                return;
+            }
+        }
+
+        // 2) Ispezione contenuto (sample)
+        try (InputStream sample = filePart.getInputStream()) {
+            String textSample = TikaUtil.readTextSample(sample, 64 * 1024); // leggi fino a 64KB
+            if (TikaUtil.looksMaliciousText(textSample)) {
+                req.setAttribute("error", "Contenuto sospetto (HTML/script non ammesso).");
+                req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
+                return;
+            }
+        }
+
+        // 3) Salvataggio su disco
+        Path dest = uploadDir.resolve(System.currentTimeMillis() + "_" + submittedName);
         try (InputStream in = filePart.getInputStream()) {
             Files.copy(in, dest);
         }
 
-        // Salvataggio su DB
+        // 4) Inserimento a DB
         String email = (String) session.getAttribute("userEmail");
         int userId = Helper.findUserIdByEmail(email);
 

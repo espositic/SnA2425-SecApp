@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 /**
- * Sprint 1: login base con HttpSession (nessun remember-me ancora).
- * Sprint 2 aggiungerà gestione cookie sicuri e hardening sessione.
+ * Sprint 2: login con mitigazione session fixation e timeout sessione.
+ * (Il remember-me sicuro arriverà più avanti.)
  */
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
@@ -37,8 +37,14 @@ public class LoginServlet extends HttpServlet {
         UserDao dao = new UserDao();
         try {
             if (dao.validateLogin(email, pass)) {
-                HttpSession session = req.getSession(true);
+                // 🔒 Hardening Sprint 2
+                HttpSession old = req.getSession(false);
+                if (old != null) old.invalidate();           // evita fixation
+
+                HttpSession session = req.getSession(true);  // nuova sessione
+                session.setMaxInactiveInterval(15 * 60);     // timeout 15'
                 session.setAttribute("userEmail", email);
+
                 resp.sendRedirect(req.getContextPath() + "/dashboard");
             } else {
                 req.setAttribute("error", "Credenziali non valide.");

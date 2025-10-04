@@ -11,5 +11,16 @@
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 
+    <session-config>
+        <session-timeout>15</session-timeout>
+        <tracking-mode>COOKIE</tracking-mode>
+        <cookie-config>
+            <http-only>true</http-only>
+            <!-- <secure>true</secure>  --> <!-- lo abiliteremo quando attiverai HTTPS -->
+            <name>JSESSIONID</name>
+        </cookie-config>
+    </session-config>
+
+
     <!-- Sprint 3: qui aggiungeremo il security-constraint CONFIDENTIAL per forzare HTTPS -->
 </web-app>
