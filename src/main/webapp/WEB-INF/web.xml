@@ -21,6 +21,22 @@
         </cookie-config>
     </session-config>
 
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>SecurePages</web-resource-name>
+            <url-pattern>/login</url-pattern>
+            <url-pattern>/register</url-pattern>
+            <url-pattern>/dashboard</url-pattern>
+            <url-pattern>/upload</url-pattern>
+            <url-pattern>/proposals</url-pattern>
+            <url-pattern>/proposal</url-pattern>
+        </web-resource-collection>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+
 
     <!-- Sprint 3: qui aggiungeremo il security-constraint CONFIDENTIAL per forzare HTTPS -->
 </web-app>

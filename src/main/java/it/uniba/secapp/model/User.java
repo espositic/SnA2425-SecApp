@@ -9,6 +9,7 @@ public class User {
     private int id;
     private String email;
     private String passwordPlain; // SOLO Sprint 1
+    private String profilePicPath;
 
     public int getId() {
         return id;
@@ -29,5 +30,13 @@ public class User {
     }
     public void setPasswordPlain(String passwordPlain) {
         this.passwordPlain = passwordPlain;
+    }
+
+    public String getProfilePicPath() {
+        return profilePicPath;
+    }
+
+    public void setProfilePicPath(String path) {
+        this.profilePicPath = path;
     }
 }
