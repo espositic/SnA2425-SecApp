@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  mysql-secapp:
+    image: mysql:8.0
+    container_name: mysql-secapp
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: secapp
+    ports:
+      - "3307:3306"   # porta host 3307 -> porta container 3306
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # carica 01_secapp_init.sql al primo avvio
+      - mysql_data_secapp:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  tomcat-secapp:
+    image: tomcat:9.0-jdk17
+    container_name: tomcat-secapp
+    depends_on:
+      mysql-secapp:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # apri http://localhost:8080/secapp
+    volumes:
+      # monta la tua war costruita da Maven
+      - ./target/secapp.war:/usr/local/tomcat/webapps/secapp.war:ro
+    environment:
+      # aumenta un po' la memoria e log utili
+      CATALINA_OPTS: "-Xms256m -Xmx512m -Djava.security.egd=file:/dev/./urandom"
+    restart: unless-stopped
+
+volumes:
+  mysql_data_secapp:

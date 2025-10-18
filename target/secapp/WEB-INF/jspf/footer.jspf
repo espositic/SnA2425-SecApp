@@ -1,0 +1,4 @@
+</div> <%-- chiude .container --%>
+<div class="footer" style="text-align: center">
+    <p>&copy; 2025 Esposito Matteo. All Rights Reserved.</p>
+</div>

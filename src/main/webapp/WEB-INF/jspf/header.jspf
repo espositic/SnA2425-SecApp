@@ -1,0 +1,14 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<c:url var="cssMain" value="/assets/css/main.css"/>
+<link rel="stylesheet" href="${cssMain}"/>
+
+<div class="header">
+    <div class="header-inner">
+        <a href="${pageContext.request.contextPath}/" class="brand" style="text-decoration:none; color:inherit;">
+            <c:url var="logoUrl" value="/assets/img/logo.png"/>
+            <img src="${logoUrl}" alt="Logo Università" onerror="this.style.display='none'"/>
+            <div class="brand-title">Sicurezza nelle Applicazioni</div>
+        </a>
+    </div>
+</div>
+<div class="container">
